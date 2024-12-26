@@ -6,8 +6,12 @@ export default defineConfig({
         outDir: 'dist',
         rollupOptions: {
             output: {
-                manualChunks: undefined
+                manualChunks: null
             }
+        },
+        commonjsOptions: {
+            include: [/node_modules/],
+            extensions: ['.js', '.cjs']
         }
     }
 }) 
