@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite'
 
 export default defineConfig({
-    base: './', // Change this to relative path for Netlify
+    base: '/',
     build: {
         outDir: 'dist',
         rollupOptions: {
