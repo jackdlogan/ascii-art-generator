@@ -8,17 +8,15 @@ export default defineConfig({
         rollupOptions: {
             input: {
                 main: path.resolve(__dirname, 'index.html')
-            },
-            output: {
-                manualChunks: (id) => {
-                    if (id.includes('node_modules/html2canvas')) {
-                        return 'html2canvas';
-                    }
-                }
             }
         }
     },
     optimizeDeps: {
         include: ['html2canvas']
+    },
+    resolve: {
+        alias: {
+            'html2canvas': path.resolve(__dirname, 'node_modules/html2canvas/dist/html2canvas.esm.js')
+        }
     }
 }) 
