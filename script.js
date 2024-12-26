@@ -1,4 +1,4 @@
-import html2canvas from 'html2canvas/dist/html2canvas.esm.js';
+import html2canvas from 'html2canvas';
 
 let effect;
 let characters = '    .:-+*=%@#■90';
@@ -44,6 +44,7 @@ function resizeImage(image) {
 
 function createAsciiArt(image) {
     return new Promise((resolve) => {
+        console.log('Starting ASCII art creation...'); // Debug log
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
         
@@ -52,22 +53,28 @@ function createAsciiArt(image) {
         canvas.width = CANVAS_SIZE;
         canvas.height = CANVAS_SIZE;
         
+        console.log('Canvas created with size:', CANVAS_SIZE); // Debug log
+        
         // Clear canvas with background color
         ctx.fillStyle = backgroundColor;
         ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
         
         // Calculate dimensions and position
         const dimensions = resizeImage(image);
-        
-        // Draw image centered in canvas
-        ctx.drawImage(
-            image,
-            dimensions.x, dimensions.y,
-            dimensions.width, dimensions.height
-        );
+        console.log('Image dimensions:', dimensions); // Debug log
         
         try {
+            // Draw image centered in canvas
+            ctx.drawImage(
+                image,
+                dimensions.x, dimensions.y,
+                dimensions.width, dimensions.height
+            );
+            console.log('Image drawn to canvas'); // Debug log
+            
             const imageData = ctx.getImageData(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+            console.log('Image data obtained'); // Debug log
+            
             let asciiArt = '';
             
             // Calculate ASCII dimensions
@@ -97,7 +104,7 @@ function createAsciiArt(image) {
             
             resolve(asciiArt);
         } catch (error) {
-            console.error('Error processing image:', error);
+            console.error('Error in createAsciiArt:', error);
             resolve('Error creating ASCII art');
         }
     });
@@ -159,17 +166,21 @@ function initialWaveAnimation(asciiArt) {
 document.getElementById('file-selector').addEventListener('change', async (event) => {
     const file = event.target.files[0];
     if (file) {
+        console.log('File selected:', file.name); // Debug log
         showLoadingText();
         
         try {
             const reader = new FileReader();
             reader.onload = async (e) => {
+                console.log('File read successfully'); // Debug log
                 const image = new Image();
-                image.crossOrigin = "Anonymous";  // Add this line
+                image.crossOrigin = "Anonymous";
                 
                 image.onload = async () => {
+                    console.log('Image loaded:', image.width, 'x', image.height); // Debug log
                     try {
                         const asciiArt = await createAsciiArt(image);
+                        console.log('ASCII art created'); // Debug log
                         initialWaveAnimation(asciiArt);
                     } catch (error) {
                         console.error('Error in createAsciiArt:', error);
