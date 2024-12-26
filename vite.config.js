@@ -1,20 +1,24 @@
 import { defineConfig } from 'vite'
+import path from 'path'
 
 export default defineConfig({
     base: './',
     build: {
         outDir: 'dist',
         rollupOptions: {
+            input: {
+                main: path.resolve(__dirname, 'index.html')
+            },
             output: {
-                manualChunks: {
-                    html2canvas: ['html2canvas']
+                manualChunks: (id) => {
+                    if (id.includes('node_modules/html2canvas')) {
+                        return 'html2canvas';
+                    }
                 }
             }
         }
     },
-    resolve: {
-        alias: {
-            'html2canvas': 'html2canvas/dist/html2canvas.esm.js'
-        }
+    optimizeDeps: {
+        include: ['html2canvas']
     }
 }) 
