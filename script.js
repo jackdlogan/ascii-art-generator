@@ -14,6 +14,10 @@ let rowSpeeds = [];  // Different speeds for each row
 let isTransitioning = false;
 let transitionComplete = false;
 
+window.addEventListener('error', function(e) {
+    console.error('Script error:', e);
+});
+
 function resizeImage(image) {
     const CANVAS_SIZE = 1080;
     const aspectRatio = image.width / image.height;
@@ -155,19 +159,23 @@ function initialWaveAnimation(asciiArt) {
 
 // File upload handling
 document.getElementById('file-selector').addEventListener('change', (event) => {
-    const file = event.target.files[0];
-    if (file) {
-        showLoadingText();
-        
-        setTimeout(() => {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const image = new Image();
-                image.onload = () => createAsciiArt(image);
-                image.src = e.target.result;
-            };
-            reader.readAsDataURL(file);
-        }, 1000); // Show loading text for 1 second
+    try {
+        const file = event.target.files[0];
+        if (file) {
+            showLoadingText();
+            
+            setTimeout(() => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const image = new Image();
+                    image.onload = () => createAsciiArt(image);
+                    image.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }, 1000);
+        }
+    } catch (error) {
+        console.error('Error handling file:', error);
     }
 });
 

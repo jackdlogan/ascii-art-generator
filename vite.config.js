@@ -1,8 +1,13 @@
 import { defineConfig } from 'vite'
 
 export default defineConfig({
-    base: '/ascii-art-generator/', // Replace with your repo name
+    base: './', // Change this to relative path for Netlify
     build: {
-        outDir: 'dist'
+        outDir: 'dist',
+        rollupOptions: {
+            output: {
+                manualChunks: undefined
+            }
+        }
     }
 }) 
