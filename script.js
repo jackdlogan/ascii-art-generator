@@ -1,4 +1,4 @@
-import html2canvas from './node_modules/html2canvas/dist/html2canvas.esm.js';
+import html2canvas from 'html2canvas';
 
 let effect;
 let characters = '    .:-+*=%@#■90';
@@ -43,71 +43,62 @@ function resizeImage(image) {
 }
 
 function createAsciiArt(image) {
-    return new Promise((resolve) => {
-        console.log('Starting ASCII art creation...'); // Debug log
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        
-        // Set fixed canvas size to 1080x1080
-        const CANVAS_SIZE = 1080;
-        canvas.width = CANVAS_SIZE;
-        canvas.height = CANVAS_SIZE;
-        
-        console.log('Canvas created with size:', CANVAS_SIZE); // Debug log
-        
-        // Clear canvas with background color
-        ctx.fillStyle = backgroundColor;
-        ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
-        
-        // Calculate dimensions and position
-        const dimensions = resizeImage(image);
-        console.log('Image dimensions:', dimensions); // Debug log
-        
-        try {
-            // Draw image centered in canvas
-            ctx.drawImage(
-                image,
-                dimensions.x, dimensions.y,
-                dimensions.width, dimensions.height
-            );
-            console.log('Image drawn to canvas'); // Debug log
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    
+    // Set fixed canvas size to 1080x1080
+    const CANVAS_SIZE = 1080;
+    canvas.width = CANVAS_SIZE;
+    canvas.height = CANVAS_SIZE;
+    
+    // Clear canvas with background color
+    ctx.fillStyle = backgroundColor;
+    ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+    
+    // Calculate dimensions and position
+    const dimensions = resizeImage(image);
+    
+    // Draw image centered in canvas
+    ctx.drawImage(
+        image,
+        dimensions.x, dimensions.y,
+        dimensions.width, dimensions.height
+    );
+    
+    const imageData = ctx.getImageData(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+    let asciiArt = '';
+    
+    // Calculate ASCII dimensions
+    // We'll use a smaller number of characters for better visibility
+    const ASCII_WIDTH = 150;  // Number of characters per line
+    const ASCII_HEIGHT = Math.floor(ASCII_WIDTH * (dimensions.height / dimensions.width));
+    
+    // Calculate sampling steps
+    const stepX = CANVAS_SIZE / ASCII_WIDTH;
+    const stepY = CANVAS_SIZE / ASCII_HEIGHT;
+    
+    for (let y = 0; y < ASCII_HEIGHT; y++) {
+        for (let x = 0; x < ASCII_WIDTH; x++) {
+            const sampleX = Math.floor(x * stepX);
+            const sampleY = Math.floor(y * stepY);
             
-            const imageData = ctx.getImageData(0, 0, CANVAS_SIZE, CANVAS_SIZE);
-            console.log('Image data obtained'); // Debug log
+            const offset = (sampleY * CANVAS_SIZE + sampleX) * 4;
+            const r = imageData.data[offset];
+            const g = imageData.data[offset + 1];
+            const b = imageData.data[offset + 2];
             
-            let asciiArt = '';
+            // Convert to grayscale
+            const brightness = (0.299 * r + 0.587 * g + 0.114 * b);
             
-            // Calculate ASCII dimensions
-            const ASCII_WIDTH = 150;
-            const ASCII_HEIGHT = Math.floor(ASCII_WIDTH * (dimensions.height / dimensions.width));
-            
-            // Calculate sampling steps
-            const stepX = CANVAS_SIZE / ASCII_WIDTH;
-            const stepY = CANVAS_SIZE / ASCII_HEIGHT;
-            
-            for (let y = 0; y < ASCII_HEIGHT; y++) {
-                for (let x = 0; x < ASCII_WIDTH; x++) {
-                    const sampleX = Math.floor(x * stepX);
-                    const sampleY = Math.floor(y * stepY);
-                    
-                    const offset = (sampleY * CANVAS_SIZE + sampleX) * 4;
-                    const r = imageData.data[offset];
-                    const g = imageData.data[offset + 1];
-                    const b = imageData.data[offset + 2];
-                    
-                    const brightness = (0.299 * r + 0.587 * g + 0.114 * b);
-                    const charIndex = Math.floor(brightness / 255 * (characters.length - 1));
-                    asciiArt += characters[charIndex] + ' ';
-                }
-                asciiArt += '\n';
-            }
-            
-            resolve(asciiArt);
-        } catch (error) {
-            console.error('Error in createAsciiArt:', error);
-            resolve('Error creating ASCII art');
+            // Map brightness to character
+            const charIndex = Math.floor(brightness / 255 * (characters.length - 1));
+            asciiArt += characters[charIndex] + ' ';
         }
-    });
+        asciiArt += '\n';
+    }
+    
+    // Start the initial wave animation with the generated ASCII art
+    initialWaveAnimation(asciiArt);
 }
 
 // Add this function to create loading text
@@ -163,45 +154,20 @@ function initialWaveAnimation(asciiArt) {
 }
 
 // File upload handling
-document.getElementById('file-selector').addEventListener('change', async (event) => {
+document.getElementById('file-selector').addEventListener('change', (event) => {
     const file = event.target.files[0];
     if (file) {
-        console.log('File selected:', file.name); // Debug log
         showLoadingText();
         
-        try {
+        setTimeout(() => {
             const reader = new FileReader();
-            reader.onload = async (e) => {
-                console.log('File read successfully'); // Debug log
+            reader.onload = (e) => {
                 const image = new Image();
-                image.crossOrigin = "Anonymous";
-                
-                image.onload = async () => {
-                    console.log('Image loaded:', image.width, 'x', image.height); // Debug log
-                    try {
-                        const asciiArt = await createAsciiArt(image);
-                        console.log('ASCII art created'); // Debug log
-                        initialWaveAnimation(asciiArt);
-                    } catch (error) {
-                        console.error('Error in createAsciiArt:', error);
-                    }
-                };
-                
-                image.onerror = (error) => {
-                    console.error('Error loading image:', error);
-                };
-                
+                image.onload = () => createAsciiArt(image);
                 image.src = e.target.result;
             };
-            
-            reader.onerror = (error) => {
-                console.error('Error reading file:', error);
-            };
-            
             reader.readAsDataURL(file);
-        } catch (error) {
-            console.error('Error in file upload handler:', error);
-        }
+        }, 1000); // Show loading text for 1 second
     }
 });
 
