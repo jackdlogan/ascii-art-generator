@@ -37,15 +37,26 @@ document.getElementById('screenshotButton').addEventListener('click', async () =
                 foreignObjectRendering: false
             });
             
-            // Use Blob instead of data URL
-            canvas.toBlob((blob) => {
-                const url = URL.createObjectURL(blob);
+            // Create a temporary link and trigger download
+            try {
+                // Convert canvas to base64 string directly
+                const dataUrl = canvas.toDataURL('image/png');
                 const link = document.createElement('a');
+                link.href = dataUrl;
                 link.download = 'ASCII_art.png';
-                link.href = url;
+                document.body.appendChild(link);
                 link.click();
-                URL.revokeObjectURL(url);
-            }, 'image/png');
+                document.body.removeChild(link);
+            } catch (downloadError) {
+                console.error('Download error:', downloadError);
+                // Fallback method
+                const tab = window.open();
+                if (tab) {
+                    tab.document.write('<img src="' + canvas.toDataURL('image/png') + '"/>');
+                } else {
+                    alert('Please allow popups to download the image');
+                }
+            }
             
         } catch (error) {
             console.error('Screenshot error:', error);
