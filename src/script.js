@@ -37,25 +37,45 @@ document.getElementById('screenshotButton').addEventListener('click', async () =
                 foreignObjectRendering: false
             });
             
-            // Create a temporary link and trigger download
-            try {
-                // Convert canvas to base64 string directly
-                const dataUrl = canvas.toDataURL('image/png');
-                const link = document.createElement('a');
-                link.href = dataUrl;
-                link.download = 'ASCII_art.png';
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-            } catch (downloadError) {
-                console.error('Download error:', downloadError);
-                // Fallback method
-                const tab = window.open();
-                if (tab) {
-                    tab.document.write('<img src="' + canvas.toDataURL('image/png') + '"/>');
-                } else {
-                    alert('Please allow popups to download the image');
-                }
+            // Open image in new tab
+            const imageUrl = canvas.toDataURL('image/png');
+            const newTab = window.open();
+            if (newTab) {
+                newTab.document.write(`
+                    <html>
+                        <head>
+                            <title>ASCII Art Screenshot</title>
+                            <style>
+                                body {
+                                    margin: 0;
+                                    display: flex;
+                                    justify-content: center;
+                                    align-items: center;
+                                    min-height: 100vh;
+                                    background: ${backgroundColor};
+                                }
+                                img {
+                                    max-width: 100%;
+                                    max-height: 100vh;
+                                }
+                                p {
+                                    position: fixed;
+                                    bottom: 10px;
+                                    left: 50%;
+                                    transform: translateX(-50%);
+                                    color: ${ASCIIColor};
+                                    font-family: Arial, sans-serif;
+                                }
+                            </style>
+                        </head>
+                        <body>
+                            <img src="${imageUrl}" alt="ASCII Art">
+                            <p>Right-click the image and select "Save image as..." to download</p>
+                        </body>
+                    </html>
+                `);
+            } else {
+                alert('Please allow popups to view the screenshot');
             }
             
         } catch (error) {
