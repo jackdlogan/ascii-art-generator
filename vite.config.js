@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite'
 
 export default defineConfig({
-    base: './', // Change this line to use relative paths
+    base: './',
     build: {
         outDir: 'dist',
         rollupOptions: {
@@ -10,6 +10,11 @@ export default defineConfig({
                     html2canvas: ['html2canvas']
                 }
             }
+        }
+    },
+    resolve: {
+        alias: {
+            'html2canvas': 'html2canvas/dist/html2canvas.esm.js'
         }
     }
 }) 
