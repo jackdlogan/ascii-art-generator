@@ -2,8 +2,6 @@ import html2canvas from 'html2canvas';
 
 let effect;
 let characters = '    .:-+o*=%S$#■90';
-let backgroundColor = 'black';
-let ASCIIColor = 'white';
 let animationId = null;
 const defaultCharacters = '   .:-+o*=%S$#■90';
 let characterMap = {};
@@ -76,7 +74,7 @@ function createAsciiArt(image) {
     canvas.height = CANVAS_SIZE;
     
     // Clear canvas with background color
-    ctx.fillStyle = backgroundColor;
+    ctx.fillStyle = 'black';
     ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
     
     // Calculate dimensions and position
@@ -140,7 +138,7 @@ function initialWaveAnimation(asciiArt) {
     ascii.style.lineHeight = '1';
     ascii.style.letterSpacing = '0px';
     ascii.style.fontSize = '8px';  // Smaller font size for better fit
-    ascii.style.color = ASCIIColor;
+    ascii.style.color = 'white';
     ascii.style.transform = 'scale(1)';  // Allow scaling if needed
     ascii.style.transformOrigin = 'center';
     
@@ -199,27 +197,14 @@ document.getElementById('file-selector').addEventListener('change', (event) => {
     }
 });
 
-// Light/Dark mode toggle
-document.getElementById('lightDark').addEventListener('click', () => {
-    const isDark = backgroundColor === 'black';
-    backgroundColor = isDark ? 'white' : 'black';
-    ASCIIColor = isDark ? 'black' : 'white';
-    
-    document.body.style.backgroundColor = backgroundColor;
-    const ascii = document.querySelector('#ascii-container > div');
-    if (ascii) {
-        ascii.style.color = ASCIIColor;
-    }
-});
-
 // Screenshot functionality
 document.getElementById('screenshotButton').addEventListener('click', () => {
     const container = document.getElementById('ascii-container');
     
-    // Create a wrapper div with white background for PNG export
+    // Create a wrapper div with black background for PNG export
     const wrapper = document.createElement('div');
     wrapper.style.padding = '20px';
-    wrapper.style.backgroundColor = backgroundColor;
+    wrapper.style.backgroundColor = 'black';  // Fixed color instead of variable
     wrapper.style.display = 'inline-block';
     
     // Clone the ASCII art
@@ -232,7 +217,7 @@ document.getElementById('screenshotButton').addEventListener('click', () => {
     document.body.appendChild(wrapper);
     
     html2canvas(wrapper, {
-        backgroundColor: backgroundColor,
+        backgroundColor: 'black',  // Fixed color instead of variable
         scale: 2, // Increase resolution
         logging: false,
     }).then((canvas) => {

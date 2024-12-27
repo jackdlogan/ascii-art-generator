@@ -9,36 +9,127 @@
             margin: 0;
             background-color: black;
             color: white;
-            font-family: Arial, sans-serif;
+            font-family: 'Segoe UI', Arial, sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
             min-height: 100vh;
+            background: linear-gradient(135deg, #000000, #1a1a1a);
+            padding-top: 100px; /* Add space for fixed controls */
         }
 
         .controls {
-            margin: 20px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
             display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
+            gap: 15px;
             justify-content: center;
+            align-items: center;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
         }
 
         button {
-            padding: 8px 16px;
+            padding: 12px 24px;
+            border-radius: 25px;
+            border: none;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            color: white;
+            font-family: inherit;
+            font-size: 14px;
             cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+
+        button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                120deg,
+                transparent,
+                rgba(255, 255, 255, 0.2),
+                transparent
+            );
+            transition: 0.5s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        button:hover::before {
+            left: 100%;
+        }
+
+        button:active {
+            transform: translateY(1px);
+        }
+
+        #file-selector {
+            padding: 8px 16px;
+            border-radius: 25px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        #file-selector::-webkit-file-upload-button {
+            padding: 8px 16px;
+            border-radius: 20px;
+            border: none;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            font-family: inherit;
+            cursor: pointer;
+            margin-right: 10px;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+
+        #file-selector::-webkit-file-upload-button:hover {
+            background: rgba(255, 255, 255, 0.3);
         }
 
         #ascii-container {
             margin: 20px;
             text-align: center;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 15px;
+            backdrop-filter: blur(5px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            max-width: 90vw;
+            overflow: auto;
+        }
+
+        /* Remove different sizes for visual consistency */
+        button, #file-selector, #file-selector::-webkit-file-upload-button {
+            font-size: 14px;
         }
     </style>
 </head>
 <body>
     <div class="controls">
         <input type="file" id="file-selector" accept="image/*">
-        <button id="lightDark">Toggle Light/Dark Mode</button>
         <button id="screenshotButton">Take Screenshot</button>
         <button id="animateButton">Toggle Animation</button>
         <button id="resetASCII">Reset ASCII</button>
