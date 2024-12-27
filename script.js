@@ -1,11 +1,11 @@
 import html2canvas from 'html2canvas';
 
 let effect;
-let characters = '    .:-+*=%@#■90';
+let characters = '    .:-+o*=%S$#■90';
 let backgroundColor = 'black';
 let ASCIIColor = 'white';
 let animationId = null;
-const defaultCharacters = '   .:-+*=%@#■90';
+const defaultCharacters = '   .:-+o*=%S$#■90';
 let characterMap = {};
 let currentColumn = 0;
 let waveWidth = 20; // How many columns are affected at once
@@ -13,6 +13,26 @@ let rowColumns = []; // Track column position for each row
 let rowSpeeds = [];  // Different speeds for each row
 let isTransitioning = false;
 let transitionComplete = false;
+let blinkAnimationId = null;
+const blinkPairs = [
+    { chars: ['o', '9'], probability: 0.3 },
+    { chars: ['S', '$'], probability: 0.3 }
+];
+
+// Add special block character for random swapping
+const BLOCK_CHAR = '■';
+
+// Add this to track original characters
+let originalArt = '';
+
+// Add these variables at the top
+let restoreWaveColumns = []; // Track restore wave position for each row
+let restoreWaveSpeeds = []; // Speeds for restore wave
+let restoreWaveStarted = false;
+let restoreDelay = 1000; // 1 second delay
+
+// Add this variable at the top
+const ROW_WAVE_PROBABILITY = 0.3; // 30% chance for each row to participate in the wave
 
 window.addEventListener('error', function(e) {
     console.error('Script error:', e);
@@ -249,11 +269,21 @@ function shuffleCharacters() {
 }
 
 function initializeRowTracking(numRows) {
-    rowColumns = new Array(numRows).fill(0);
-    // Generate random speeds between 3 and 8 for each row
+    // Initialize arrays with -1 to indicate inactive rows
+    rowColumns = new Array(numRows).fill(-1);
+    restoreWaveColumns = new Array(numRows).fill(-1);
+    
+    // Randomly activate some rows for the first wave
+    rowColumns = rowColumns.map(() => 
+        Math.random() < ROW_WAVE_PROBABILITY ? 0 : -1
+    );
+    
+    // Generate speeds for all rows (will only be used by active rows)
     rowSpeeds = new Array(numRows).fill(0).map(() => 
         Math.floor(Math.random() * 6) + 3
     );
+    restoreWaveSpeeds = [...rowSpeeds];
+    restoreWaveStarted = false;
 }
 
 function animateAscii() {
@@ -262,64 +292,82 @@ function animateAscii() {
 
     let currentArt = asciiContainer.textContent;
     const lines = currentArt.split('\n');
+    let newLines = [...lines];
     const width = lines[0].length;
 
-    // Initialize row tracking if not already done
-    if (rowColumns.length !== lines.length) {
-        initializeRowTracking(lines.length);
-        shuffleCharacters(); // Initial character mapping
+    // Start restore wave after delay
+    if (!restoreWaveStarted && Math.max(...rowColumns.filter(col => col !== -1)) > waveWidth) {
+        restoreWaveStarted = true;
+        setTimeout(() => {
+            // Activate same rows for restore wave that were active in first wave
+            restoreWaveColumns = rowColumns.map(col => col !== -1 ? 0 : -1);
+        }, restoreDelay);
     }
 
-    if (!isTransitioning) {
-        // Start new transition
-        isTransitioning = true;
-        transitionComplete = false;
-        rowColumns = new Array(lines.length).fill(0);
-    }
-
-    // Process the wave effect
-    let newLines = lines.map((line, rowIndex) => {
+    // Process each line
+    lines.forEach((line, rowIndex) => {
         let newLine = '';
         for (let x = 0; x < line.length; x++) {
-            // Check if this column is within the current wave window
-            if (x >= rowColumns[rowIndex] && x < rowColumns[rowIndex] + waveWidth) {
-                newLine += characterMap[line[x]] || line[x];
-            } else {
-                newLine += line[x];
-            }
-        }
+            const char = line[x];
+            let newChar = char;
 
-        // Move the wave window for this row
-        rowColumns[rowIndex] += rowSpeeds[rowIndex];
-        return newLine;
+            // First wave: change characters (only if row is active)
+            if (rowColumns[rowIndex] !== -1 && 
+                x >= rowColumns[rowIndex] && 
+                x < rowColumns[rowIndex] + waveWidth) {
+                if (!characterMap[char]) {
+                    shuffleCharacters();
+                }
+                newChar = characterMap[char] || char;
+            }
+            
+            // Restore wave: revert to original characters (only if row is active)
+            if (restoreWaveColumns[rowIndex] !== -1 && 
+                x >= restoreWaveColumns[rowIndex] && 
+                x < restoreWaveColumns[rowIndex] + waveWidth) {
+                const originalChar = originalArt.split('\n')[rowIndex][x];
+                newChar = originalChar;
+            }
+
+            newLine += newChar;
+        }
+        newLines[rowIndex] = newLine;
+
+        // Move the waves only for active rows
+        if (rowColumns[rowIndex] !== -1) {
+            rowColumns[rowIndex] += rowSpeeds[rowIndex];
+        }
+        if (restoreWaveColumns[rowIndex] !== -1) {
+            restoreWaveColumns[rowIndex] += restoreWaveSpeeds[rowIndex];
+        }
     });
 
-    // Check if all rows have completed their transition
-    const allRowsComplete = rowColumns.every(col => col >= width);
+    // Check if both waves are complete for active rows
+    const allComplete = rowColumns.every(col => col === -1 || col >= width) && 
+                       restoreWaveColumns.every(col => col === -1 || col >= width);
     
-    if (allRowsComplete && !transitionComplete) {
-        // Reset positions and create new mapping for next wave
-        rowColumns = new Array(lines.length).fill(0);
+    if (allComplete) {
+        // Reset for next transition with new random row selection
+        rowColumns = new Array(lines.length).fill(-1).map(() => 
+            Math.random() < ROW_WAVE_PROBABILITY ? 0 : -1
+        );
+        restoreWaveColumns = new Array(lines.length).fill(-1);
+        restoreWaveStarted = false;
         shuffleCharacters();
-        transitionComplete = true;
-        isTransitioning = false;
     }
 
     asciiContainer.textContent = newLines.join('\n');
 }
 
-// Update the animation button click handler
+// Update the Toggle Animation button handler
 document.getElementById('animateButton').addEventListener('click', () => {
     const button = document.getElementById('animateButton');
+    const asciiContainer = document.querySelector('#ascii-container > div');
     
     if (animationId === null) {
-        // Reset animation state
-        isTransitioning = false;
-        transitionComplete = false;
-        
-        // Reset all row positions when starting animation
-        const asciiContainer = document.querySelector('#ascii-container > div');
+        // Store original art when starting animation
         if (asciiContainer) {
+            originalArt = asciiContainer.textContent;
             const numRows = asciiContainer.textContent.split('\n').length;
             initializeRowTracking(numRows);
         }
@@ -328,10 +376,13 @@ document.getElementById('animateButton').addEventListener('click', () => {
         button.textContent = 'Stop Animation';
         animationId = setInterval(animateAscii, 50);
     } else {
-        // Stop animation
+        // Stop animation and restore original art
         button.textContent = 'Toggle Animation';
         clearInterval(animationId);
         animationId = null;
+        if (asciiContainer) {
+            asciiContainer.textContent = originalArt;
+        }
     }
 });
 
@@ -350,11 +401,106 @@ document.getElementById('resetASCII').addEventListener('click', () => {
         reader.readAsDataURL(fileInput.files[0]);
     }
     
-    // If animation is running, stop it
+    // Stop animations if running
     if (animationId !== null) {
-        const button = document.getElementById('animateButton');
-        button.textContent = 'Toggle Animation';
+        const waveButton = document.getElementById('animateButton');
+        waveButton.textContent = 'Toggle Animation';
         clearInterval(animationId);
         animationId = null;
+    }
+    
+    if (blinkAnimationId !== null) {
+        const blinkButton = document.getElementById('blinkBlink');
+        blinkButton.textContent = 'BlinkBlink';
+        clearInterval(blinkAnimationId);
+        blinkAnimationId = null;
+    }
+});
+
+// Update the animateBlink function
+function animateBlink() {
+    const asciiContainer = document.querySelector('#ascii-container > div');
+    if (!asciiContainer) return;
+
+    let currentArt = asciiContainer.textContent;
+    const lines = currentArt.split('\n');
+    let newLines = [...lines];
+    
+    // Process each line
+    lines.forEach((line, lineIndex) => {
+        // Increase chance to process each line (50%)
+        if (Math.random() < 0.5) {
+            let newLine = '';
+            for (let i = 0; i < line.length; i++) {
+                const char = line[i];
+                let newChar = char;
+                
+                // Increase chance to process each character (20%)
+                if (Math.random() < 0.2) {
+                    const originalChar = originalArt.split('\n')[lineIndex][i];
+                    
+                    // First check if it's currently a block character or was swapped with block
+                    if (char === BLOCK_CHAR || 
+                        (originalChar !== BLOCK_CHAR && char !== originalChar && char !== ' ')) {
+                        // Revert to original character
+                        newChar = originalChar;
+                    } else {
+                        // Then check regular blink pairs
+                        let foundInPairs = false;
+                        for (const pair of blinkPairs) {
+                            if (pair.chars.includes(char)) {
+                                if (char !== originalChar) {
+                                    newChar = originalChar;
+                                } else {
+                                    newChar = char === pair.chars[0] ? pair.chars[1] : pair.chars[0];
+                                }
+                                foundInPairs = true;
+                                break;
+                            }
+                        }
+                        
+                        // If not in pairs and not a space, maybe swap with block (1% chance)
+                        if (!foundInPairs && char !== ' ' && Math.random() < 0.001) {
+                            newChar = BLOCK_CHAR;
+                        }
+                    }
+                }
+                newLine += newChar;
+            }
+            newLines[lineIndex] = newLine;
+        }
+    });
+    
+    asciiContainer.textContent = newLines.join('\n');
+}
+
+// Update the BlinkBlink button event listener
+document.getElementById('blinkBlink').addEventListener('click', () => {
+    const button = document.getElementById('blinkBlink');
+    const asciiContainer = document.querySelector('#ascii-container > div');
+    
+    if (blinkAnimationId === null && asciiContainer) {
+        // Store original art when starting animation
+        originalArt = asciiContainer.textContent;
+        
+        // Start blink animation with faster interval (50ms)
+        button.textContent = 'Stop Blink';
+        blinkAnimationId = setInterval(animateBlink, 50);
+        
+        // Stop wave animation if it's running
+        if (animationId !== null) {
+            const waveButton = document.getElementById('animateButton');
+            waveButton.textContent = 'Toggle Animation';
+            clearInterval(animationId);
+            animationId = null;
+        }
+    } else {
+        // Stop blink animation and restore original art
+        button.textContent = 'BlinkBlink';
+        clearInterval(blinkAnimationId);
+        blinkAnimationId = null;
+        if (asciiContainer) {
+            asciiContainer.textContent = originalArt;
+        }
     }
 });
